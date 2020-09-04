@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSRF Token -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
@@ -92,7 +92,7 @@
         }
 
         .messages .message:last-child{
-            margin-bottom: 0;
+            /* margin-bottom: 0; */
         }
 
         .received, .sent{
@@ -197,12 +197,52 @@
             @yield('content')
         </main>
     </div>
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
     <script>
         var receiver_id = '';
         var my_id = '{{ Auth::id() }}';
 
         $(document).ready(function(){
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            // Enable pusher logging - don't include this in production
+            Pusher.logToConsole = true;
+
+            var pusher = new Pusher('6de065aa9c6396f2af28', {
+            cluster: 'ap1'
+            });
+
+            var channel = pusher.subscribe('my-channel');
+            channel.bind('my-event', function(data) {
+                if(my_id == data.from){
+
+                }
+                else if(my_id == data.to){
+                    alert();
+                    if(receiver_id == data.from){
+                        //if receiver is selected, reload the selected user
+                        $('#' + data.from).click();
+                    }
+                    else{
+                        //if receiver is not selected, add the notification for that user
+                        var pending = '';
+
+                        if(pending){
+                            $('#' + data.from).find('.pending').html(pending + 1);
+                        }
+                        else{
+
+                        }
+                    }
+                }
+            });
+            
+
             $('.user').click(function(){
                 $('.user').removeClass('active');
                 $(this).addClass('active');
@@ -218,6 +258,34 @@
                         $('#messages').html(data);
                     }
                 });
+            });
+
+            $(document).on('keyup', '.input-text input', function(e){
+                var message = $(this).val();
+
+                //if the enter key is pressed and message is not null and receiver id is selected
+                if(e.keyCode == 13 && message != '' && receiver_id != ''){
+                    
+                    $(this).val(''); //When pressed enter, text input will be empty
+
+                    var datastr = "receiver_id=" + receiver_id + "&message=" + message;
+
+                    $.ajax({
+                        type: "post",
+                        url: "message",
+                        data: datastr,
+                        cache: false,
+                        success: function(data){
+
+                        },
+                        error: function(jqXHR, status, err){
+
+                        },
+                        complete: function(){
+
+                        }
+                    });
+                }
             });
         });
     </script>

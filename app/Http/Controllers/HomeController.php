@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MyEvent;
 use App\User;
 use App\Message;
+use Pusher\Pusher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -46,5 +48,36 @@ class HomeController extends Controller
                             ->get(); 
 
         return view('message.index', ['messages' => $messages]);
+    }
+
+    public function sendMessage(Request $request){
+
+        $from = Auth::id();
+        $to = $request->receiver_id;
+        $message = $request->message;
+
+        $data = new Message();
+        $data->from = $from;
+        $data->to = $to;
+        $data->message = $message;
+        $data->is_read = 0; //Unread
+        $data->save();
+
+        $data = ['from' => $from, 'to' => $to];
+
+        $options = array(
+            'cluster' => 'ap1',
+            'useTLS' => true
+        );
+
+        $pusher = new Pusher(
+            env('PUSHER_APP_KEY'),
+            env('PUSHER_APP_SECRET'),
+            env('PUSHER_APP_ID'),
+            $options
+        );
+
+        $data = ['from'=>$from, 'to'=>$to];
+        $response = $pusher->trigger('my-channel', 'my-event', $data); dd($response);
     }
 }
