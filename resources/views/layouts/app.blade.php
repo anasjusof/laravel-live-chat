@@ -59,10 +59,11 @@
             background: #b600ff;
             margin: 0;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            width: 25px;
+            height: 25px;
             line-height: 18px;
             padding-left: 5px;
+            padding-top: 3px;
             color: #ffffff;
             font-size: 12px;
         }
@@ -220,23 +221,24 @@
             var channel = pusher.subscribe('my-channel');
             channel.bind('my-event', function(data) {
                 if(my_id == data.from){
-
+                    $('#' + data.to).click();
                 }
                 else if(my_id == data.to){
-                    alert();
                     if(receiver_id == data.from){
                         //if receiver is selected, reload the selected user
                         $('#' + data.from).click();
                     }
                     else{
+                        from = parseInt(data.from)
                         //if receiver is not selected, add the notification for that user
-                        var pending = '';
-
+                        var pending = parseInt($('#' + from).find('.pending').text());
+                        console.log(pending);
                         if(pending){
                             $('#' + data.from).find('.pending').html(pending + 1);
                         }
                         else{
-
+                            //$('#' + data.from).find('.pending').remove();
+                            $('#' + data.from).append('<span class="pending">1</span>');
                         }
                     }
                 }
@@ -246,6 +248,7 @@
             $('.user').click(function(){
                 $('.user').removeClass('active');
                 $(this).addClass('active');
+                $(this).find('.pending').remove();
 
                 receiver_id = $(this).attr('id');
                 
@@ -256,6 +259,7 @@
                     cache: false,
                     success: function (data){
                         $('#messages').html(data);
+                        scrollToBottom();
                     }
                 });
             });
@@ -276,18 +280,24 @@
                         data: datastr,
                         cache: false,
                         success: function(data){
-
+                            $('#messages').html(data);
                         },
                         error: function(jqXHR, status, err){
 
                         },
                         complete: function(){
-
+                            //scrollToBottom();
                         }
                     });
                 }
             });
         });
+
+        function scrollToBottom(){
+            $('.message-wrapper').animate({
+                scrollTop: $('.message-wrapper').get(0).scrollHeight
+            }, 50);
+        }
     </script>
 </body>
 </html>

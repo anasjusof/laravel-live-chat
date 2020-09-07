@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\MyEvent;
 use App\User;
 use App\Message;
 use Pusher\Pusher;
+use App\Events\MyEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
@@ -31,11 +32,25 @@ class HomeController extends Controller
         //Select all user except auth id
         $users = User::where('id', '!=', auth()->user()->id)->get();
 
+        $users = DB::select("
+            SELECT users.id, users.name, users.avatar, users.email, count(is_read) AS unread
+            FROM users
+            LEFT JOIN messages
+            ON users.id = messages.from
+            AND is_read = 0 
+            AND messages.to = " .Auth::id(). "
+            WHERE users.id != " .Auth::id(). "
+            GROUP BY users.id, users.name, users.avatar, users.email
+        ");
+
         return view('home', ['users' => $users]);
     }
 
     public function getMessage($user_id){
         $my_id = Auth::id();
+
+        //When get message, update all to read
+        Message::where(['from' => $user_id, 'to' => $my_id])->update(['is_read' => 1]);
 
         $messages = Message::where(function($q) use($user_id, $my_id){
                                         $q->where('from', $my_id);
@@ -78,6 +93,6 @@ class HomeController extends Controller
         );
 
         $data = ['from'=>$from, 'to'=>$to];
-        $response = $pusher->trigger('my-channel', 'my-event', $data); dd($response);
+        $response = $pusher->trigger('my-channel', 'my-event', $data);
     }
 }
